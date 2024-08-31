@@ -46,13 +46,20 @@ async function run() {
       res.send(result);
     });
 
-    
+    // save a bid data in DB
+    app.post("/bid", async (req, res) => {
+      const bidData = req.body;
+      const result = await bidsCollections.insertOne(bidData);
+      res.send(result);
+    });
+
+// get bid data in DB
 
 
 
 
 
-    
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
