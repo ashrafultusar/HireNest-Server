@@ -53,17 +53,24 @@ async function run() {
       res.send(result);
     });
 
-// save a job data in DB
-app.post("/job", async (req, res) => {
-  const jobdata = req.body;
-  const result = await jobsCollections.insertOne(jobdata);
-  res.send(result);
-});
+    // save a job data in DB
+    app.post("/job", async (req, res) => {
+      const jobdata = req.body;
+      const result = await jobsCollections.insertOne(jobdata);
+      res.send(result);
+    });
+
+    // get all job posted by a specific user
+    app.get("/jobs/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { "buyer.email": email };
+      const result = await jobsCollections.find(query).toArray();
+      res.send(result);
+
+    });
 
 
-
-
-
+    
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
