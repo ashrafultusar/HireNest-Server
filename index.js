@@ -66,19 +66,34 @@ async function run() {
       const query = { "buyer.email": email };
       const result = await jobsCollections.find(query).toArray();
       res.send(result);
-
     });
-
 
     // delete a job data from db
     app.delete("/job/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id:new ObjectId(id) };
-      const result = await jobsCollections.deleteOne(query)
+      const query = { _id: new ObjectId(id) };
+      const result = await jobsCollections.deleteOne(query);
       res.send(result);
-
     });
 
+    // update a job in BD
+    app.put("/job/:id", async (req, res) => {
+      const id = req.params.id;
+      const jobData = req.body;
+      const query = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          ...jobData,
+        },
+      };
+      const result = await jobsCollections.updateOne(query, updateDoc, options);
+      res.send(result);
+    });
+
+
+
+    
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
