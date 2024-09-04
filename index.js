@@ -108,9 +108,19 @@ async function run() {
       res.send(result);
     });
 
+    // update bid status
+    app.patch('/bid/:id', async (req, res) => {
+      const id = req.params.id
+      const status = req.body
+      const query = { _id: new ObjectId(id) }
+      const updateDoc = {
+        $set:status
+      }
+      const result = await bidsCollections.updateOne(query, updateDoc)
+      res.send(result)
+    })
 
 
-    
     
 
     // Send a ping to confirm a successful connection
