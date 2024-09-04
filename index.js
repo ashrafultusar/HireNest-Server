@@ -92,7 +92,25 @@ async function run() {
     });
 
 
+    // get all bids for a user my email from DB
+    app.get("/my-bids/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const result = await bidsCollections.find(query).toArray();
+      res.send(result);
+    });
 
+    // get all bids request from DB for job owner
+    app.get("/bid-request/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { 'buyer.email': email };
+      const result = await bidsCollections.find(query).toArray();
+      res.send(result);
+    });
+
+
+
+    
     
 
     // Send a ping to confirm a successful connection
