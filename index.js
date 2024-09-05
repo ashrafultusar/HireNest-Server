@@ -1,11 +1,14 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const port = process.env.PORT || 5000;
 
 const app = express();
 
+// corse related all problem solvw code
 const corsOptions = {
   origin: ["http://localhost:5173", "http://localhost:5173"],
   credentials: true,
@@ -31,6 +34,34 @@ async function run() {
     const jobsCollections = client.db("HireNest").collection("jobs");
     const bidsCollections = client.db("HireNest").collection("bids");
     // await client.connect();
+
+    // jwt token
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
+        expiresIn: "7d",
+      });
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      }).send({success: true})
+    });
+
+    // clear token on logout
+    app.get('/logout', (req, res) => {
+
+      res.clearCookie("token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        maxAge: 0,
+        
+      }).send({success: true})
+
+    })
+
+
 
     // get all jobs data from DB
     app.get("/jobs", async (req, res) => {
@@ -91,7 +122,6 @@ async function run() {
       res.send(result);
     });
 
-
     // get all bids for a user my email from DB
     app.get("/my-bids/:email", async (req, res) => {
       const email = req.params.email;
@@ -103,25 +133,22 @@ async function run() {
     // get all bids request from DB for job owner
     app.get("/bid-request/:email", async (req, res) => {
       const email = req.params.email;
-      const query = { 'buyer.email': email };
+      const query = { "buyer.email": email };
       const result = await bidsCollections.find(query).toArray();
       res.send(result);
     });
 
     // update bid status
-    app.patch('/bid/:id', async (req, res) => {
-      const id = req.params.id
-      const status = req.body
-      const query = { _id: new ObjectId(id) }
+    app.patch("/bid/:id", async (req, res) => {
+      const id = req.params.id;
+      const status = req.body;
+      const query = { _id: new ObjectId(id) };
       const updateDoc = {
-        $set:status
-      }
-      const result = await bidsCollections.updateOne(query, updateDoc)
-      res.send(result)
-    })
-
-
-    
+        $set: status,
+      };
+      const result = await bidsCollections.updateOne(query, updateDoc);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
