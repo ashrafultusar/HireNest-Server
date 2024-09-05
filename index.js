@@ -98,11 +98,42 @@ async function run() {
     });
 
     // save a bid data in DB
+    // app.post("/bid", async (req, res) => {
+    //   const bidData = req.body;
+
+    //   const query = {
+    //     email: bidData.email,
+    //     jobId: bidData.jobId,
+    //   };
+    //   const alreadyApply = await bidsCollections.findOne(query);
+
+    //   if (alreadyApply) {
+    //     return res
+    //       .status(404)
+    //       .send("You have already placed a bid on this job");
+    //   }
+    //   const result = await bidsCollections.insertOne(bidData);
+    //   res.send(result);
+    // });
     app.post("/bid", async (req, res) => {
       const bidData = req.body;
+      // Query to check if the user has already applied for this job
+      const query = {
+        email: bidData.email,  // User's email
+        jobId: bidData.jobId,  // Job ID
+      };
+      const alreadyApply = await bidsCollections.findOne(query);
+      // If a bid already exists, respond with a 404 status code
+      if (alreadyApply) {
+        return res.status(404).send("You have already placed a bid on this job");
+      }
+      // If no previous bid exists, insert the new bid
       const result = await bidsCollections.insertOne(bidData);
+      // Send the result of the insertion
       res.send(result);
     });
+    
+
 
     // save a job data in DB
     app.post("/job", async (req, res) => {
@@ -148,7 +179,7 @@ async function run() {
     });
 
     // get all bids for a user my email from DB
-    app.get("/my-bids/:email",verifyToken, async (req, res) => {
+    app.get("/my-bids/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email };
       const result = await bidsCollections.find(query).toArray();
@@ -156,7 +187,7 @@ async function run() {
     });
 
     // get all bids request from DB for job owner
-    app.get("/bid-request/:email",verifyToken, async (req, res) => {
+    app.get("/bid-request/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { "buyer.email": email };
       const result = await bidsCollections.find(query).toArray();
