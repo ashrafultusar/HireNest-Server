@@ -17,6 +17,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.hzcboi3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -41,27 +42,46 @@ async function run() {
       const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
         expiresIn: "7d",
       });
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-      }).send({success: true})
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
     });
 
     // clear token on logout
-    app.get('/logout', (req, res) => {
+    app.get("/logout", (req, res) => {
+      res
+        .clearCookie("token", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+          maxAge: 0,
+        })
+        .send({ success: true });
+    });
 
-      res.clearCookie("token", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-        maxAge: 0,
-        
-      }).send({success: true})
+    // jwt middleware
+    const verifyToken = (req, res, next) => {
+      const token = req.cookies?.token;
 
-    })
+      if (!token)
+        return res.status(401).send({ message: "unauthorize access" });
 
-
+      if (token) {
+        jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+          if (err) {
+            console.log(err);
+            return res.status(401).send({ message: "unauthorize access" });
+          }
+          console.log(decoded);
+          req.user = decoded;
+          next();
+        });
+      }
+    };
 
     // get all jobs data from DB
     app.get("/jobs", async (req, res) => {
@@ -92,8 +112,13 @@ async function run() {
     });
 
     // get all job posted by a specific user
-    app.get("/jobs/:email", async (req, res) => {
+    app.get("/jobs/:email", verifyToken, async (req, res) => {
+      const tokenEmail = req.user.email;
       const email = req.params.email;
+      if (tokenEmail !== email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
       const query = { "buyer.email": email };
       const result = await jobsCollections.find(query).toArray();
       res.send(result);
@@ -123,7 +148,7 @@ async function run() {
     });
 
     // get all bids for a user my email from DB
-    app.get("/my-bids/:email", async (req, res) => {
+    app.get("/my-bids/:email",verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email };
       const result = await bidsCollections.find(query).toArray();
@@ -131,7 +156,7 @@ async function run() {
     });
 
     // get all bids request from DB for job owner
-    app.get("/bid-request/:email", async (req, res) => {
+    app.get("/bid-request/:email",verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { "buyer.email": email };
       const result = await bidsCollections.find(query).toArray();
