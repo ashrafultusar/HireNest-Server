@@ -98,42 +98,25 @@ async function run() {
     });
 
     // save a bid data in DB
-    // app.post("/bid", async (req, res) => {
-    //   const bidData = req.body;
-
-    //   const query = {
-    //     email: bidData.email,
-    //     jobId: bidData.jobId,
-    //   };
-    //   const alreadyApply = await bidsCollections.findOne(query);
-
-    //   if (alreadyApply) {
-    //     return res
-    //       .status(404)
-    //       .send("You have already placed a bid on this job");
-    //   }
-    //   const result = await bidsCollections.insertOne(bidData);
-    //   res.send(result);
-    // });
     app.post("/bid", async (req, res) => {
       const bidData = req.body;
       // Query to check if the user has already applied for this job
       const query = {
-        email: bidData.email,  // User's email
-        jobId: bidData.jobId,  // Job ID
+        email: bidData.email, // User's email
+        jobId: bidData.jobId, // Job ID
       };
       const alreadyApply = await bidsCollections.findOne(query);
       // If a bid already exists, respond with a 404 status code
       if (alreadyApply) {
-        return res.status(404).send("You have already placed a bid on this job");
+        return res
+          .status(404)
+          .send("You have already placed a bid on this job");
       }
       // If no previous bid exists, insert the new bid
       const result = await bidsCollections.insertOne(bidData);
       // Send the result of the insertion
       res.send(result);
     });
-    
-
 
     // save a job data in DB
     app.post("/job", async (req, res) => {
@@ -204,6 +187,25 @@ async function run() {
       };
       const result = await bidsCollections.updateOne(query, updateDoc);
       res.send(result);
+    });
+
+    // get all jobs data for pagination
+    app.get("/all-jobs", async (req, res) => {
+      const size = parseInt(req.query.size);
+      const page = parseInt(req.query.page)-1;
+      console.log(size, page);
+      const result = await jobsCollections
+        .find()
+        .skip(page * size)
+        .limit(size)
+        .toArray();
+      res.send(result);
+    });
+
+    // get all jobs data count from db
+    app.get("/job-count", async (req, res) => {
+      const count = await jobsCollections.countDocuments();
+      res.send({ count });
     });
 
     // Send a ping to confirm a successful connection
