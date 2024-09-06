@@ -10,7 +10,11 @@ const app = express();
 
 // corse related all problem solvw code
 const corsOptions = {
-  origin: ["http://localhost:5173", "http://localhost:5173"],
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://hirenest-4bc90.web.app",
+  ],
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -218,21 +222,20 @@ async function run() {
       const search = req.query.search;
 
       let query = {
-        job_title:{$regex:search,$options:'i'}
+        job_title: { $regex: search, $options: "i" },
       };
-      if (filter) query.category = filter
+      if (filter) query.category = filter;
 
       const count = await jobsCollections.countDocuments(query);
       res.send({ count });
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
-  
   }
 }
 run().catch(console.dir);
